@@ -2,7 +2,7 @@
 
 Agent-native persistent knowledge management — compile knowledge once, query forever.
 
-Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f), combining the best of [nashsu/llm_wiki](https://github.com/nashsu/llm_wiki) and [disksing/db9-wiki](https://github.com/disksing/db9-wiki).
+Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
 ## What is this?
 
