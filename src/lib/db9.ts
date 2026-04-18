@@ -1,7 +1,15 @@
-import pg from 'pg';
 import type { WikiPage } from './wiki.js';
 
-const { Pool } = pg;
+async function loadPg() {
+  try {
+    const pg = await import('pg');
+    return pg.default;
+  } catch {
+    throw new Error(
+      'pg is required for DB9 integration. Install it with: npm install pg'
+    );
+  }
+}
 
 export interface DB9Config {
   url: string;
@@ -18,21 +26,28 @@ export interface DB9SearchResult {
  * Uses DB9's built-in embedding() function for server-side embeddings.
  */
 export class DB9Client {
-  private pool: pg.Pool;
+  private pool: any; // pg.Pool — dynamically loaded
+  private url: string;
 
   constructor(config: DB9Config) {
-    this.pool = new Pool({ connectionString: config.url });
+    this.url = config.url;
+  }
+
+  private async getPool() {
+    if (!this.pool) {
+      const pg = await loadPg();
+      this.pool = new pg.Pool({ connectionString: this.url });
+    }
+    return this.pool;
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.pool) await this.pool.end();
   }
 
-  /**
-   * Create the wiki_index and wiki_page_sources tables if they don't exist.
-   */
   async ensureSchema(): Promise<void> {
-    await this.pool.query(`
+    const pool = await this.getPool();
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS wiki_index (
         slug TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -46,7 +61,7 @@ export class DB9Client {
       )
     `);
 
-    await this.pool.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS wiki_page_sources (
         slug TEXT NOT NULL,
         source_path TEXT NOT NULL,
@@ -54,20 +69,17 @@ export class DB9Client {
       )
     `);
 
-    // Create HNSW index for vector search if not exists
-    await this.pool.query(`
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_wiki_embedding
       ON wiki_index USING hnsw (embedding vector_cosine_ops)
     `);
   }
 
-  /**
-   * Upsert a wiki page into the index with server-side embedding.
-   */
   async upsertPage(page: WikiPage, contentHash: string): Promise<void> {
+    const pool = await this.getPool();
     const embeddingText = `${page.title}. ${page.description ?? ''}. ${page.content}`;
 
-    await this.pool.query(
+    await pool.query(
       `INSERT INTO wiki_index (slug, title, description, content, tags, sources, content_hash, updated, embedding)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, embedding($9)::vector(1024))
        ON CONFLICT (slug) DO UPDATE SET
@@ -92,29 +104,24 @@ export class DB9Client {
       ]
     );
 
-    // Update source mappings
-    await this.pool.query(`DELETE FROM wiki_page_sources WHERE slug = $1`, [page.slug]);
+    await pool.query(`DELETE FROM wiki_page_sources WHERE slug = $1`, [page.slug]);
     for (const source of page.sources) {
-      await this.pool.query(
+      await pool.query(
         `INSERT INTO wiki_page_sources (slug, source_path) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
         [page.slug, source]
       );
     }
   }
 
-  /**
-   * Delete a page from the index.
-   */
   async deletePage(slug: string): Promise<void> {
-    await this.pool.query(`DELETE FROM wiki_page_sources WHERE slug = $1`, [slug]);
-    await this.pool.query(`DELETE FROM wiki_index WHERE slug = $1`, [slug]);
+    const pool = await this.getPool();
+    await pool.query(`DELETE FROM wiki_page_sources WHERE slug = $1`, [slug]);
+    await pool.query(`DELETE FROM wiki_index WHERE slug = $1`, [slug]);
   }
 
-  /**
-   * Vector similarity search using DB9's embedding() function.
-   */
   async vectorSearch(query: string, limit: number = 10): Promise<DB9SearchResult[]> {
-    const result = await this.pool.query(
+    const pool = await this.getPool();
+    const result = await pool.query(
       `WITH q AS (SELECT embedding($1)::vector(1024) AS qv)
        SELECT slug, title, 1 - (embedding <=> q.qv) AS similarity
        FROM wiki_index, q
@@ -124,29 +131,25 @@ export class DB9Client {
       [query, limit]
     );
 
-    return result.rows.map(row => ({
+    return result.rows.map((row: any) => ({
       slug: row.slug,
       title: row.title,
       similarity: parseFloat(row.similarity),
     }));
   }
 
-  /**
-   * Get content hash for a page (used for incremental sync).
-   */
   async getContentHash(slug: string): Promise<string | null> {
-    const result = await this.pool.query(
+    const pool = await this.getPool();
+    const result = await pool.query(
       `SELECT content_hash FROM wiki_index WHERE slug = $1`,
       [slug]
     );
     return result.rows[0]?.content_hash ?? null;
   }
 
-  /**
-   * Get all indexed slugs with their content hashes.
-   */
   async getAllHashes(): Promise<Map<string, string>> {
-    const result = await this.pool.query(`SELECT slug, content_hash FROM wiki_index`);
+    const pool = await this.getPool();
+    const result = await pool.query(`SELECT slug, content_hash FROM wiki_index`);
     const map = new Map<string, string>();
     for (const row of result.rows) {
       map.set(row.slug, row.content_hash);
@@ -154,15 +157,13 @@ export class DB9Client {
     return map;
   }
 
-  /**
-   * Reverse lookup: find all wiki pages that reference a given source.
-   */
   async pagesBySource(sourcePath: string): Promise<string[]> {
-    const result = await this.pool.query(
+    const pool = await this.getPool();
+    const result = await pool.query(
       `SELECT slug FROM wiki_page_sources WHERE source_path = $1`,
       [sourcePath]
     );
-    return result.rows.map(row => row.slug);
+    return result.rows.map((row: any) => row.slug);
   }
 }
 

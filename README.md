@@ -8,197 +8,142 @@ Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/4
 
 LLM Wiki is a CLI tool + AI Agent skill system that maintains an evolving, interconnected Markdown knowledge base. Instead of traditional RAG (re-deriving answers from raw documents each time), LLM Wiki **compiles** knowledge into structured wiki pages that AI agents maintain and grow over time.
 
-**Key principle:** The tool itself doesn't call LLMs. It generates `AGENTS.md` and skill files that let any AI agent (Claude Code, Codex, Cursor, etc.) operate the wiki.
-
-## Features
-
-- **Agent-native design** — AGENTS.md + skill files let any AI agent operate the wiki
-- **Two-step chain-of-thought ingestion** — Analyze first, then generate wiki pages
-- **Knowledge compounding** — Query results get written back as new wiki pages
-- **Four-signal knowledge graph** — Direct links, source overlap, Adamic-Adar, type affinity
-- **Louvain community detection** — Automatically discover knowledge clusters
-- **Graph insights** — Detect unexpected connections, knowledge gaps, hub nodes
-- **Hybrid search** — BM25 + vector (DB9) + graph traversal with Reciprocal Rank Fusion
-- **CJK support** — Bigram tokenization for Chinese/Japanese/Korean text
-- **DB9 integration** — Vector search, cloud sync, and team collaboration
-- **Obsidian compatible** — Wiki is a folder of Markdown files with `[[wikilinks]]`
-- **Chrome Web Clipper** — Browser extension to clip web pages to your wiki
-- **Self-healing lint** — Automated health checks and repairs
+**Key principle:** The tool itself doesn't call LLMs. It provides skill files that let any AI agent (Claude Code, Codex, etc.) operate the wiki. Obsidian is the human interface — no self-built GUI.
 
 ## Quick Start
 
 ```bash
-# Install
-npm install -g llm-wiki
+# Install globally
+npm install -g @jackwener/llm-wiki
 
-# Initialize a new wiki
+# Initialize a new wiki vault
 mkdir my-wiki && cd my-wiki
-llm-wiki init --name "My Wiki" --template research --language zh
+llm-wiki init
 
-# Check wiki health
-llm-wiki status
+# Install skills for your AI agent
+# Claude Code:
+llm-wiki skill ingest > .claude/skills/ingest.md
+llm-wiki skill query > .claude/skills/query.md
+llm-wiki skill lint > .claude/skills/lint.md
+llm-wiki skill research > .claude/skills/research.md
 
-# Search
-llm-wiki search "machine learning"
-
-# Analyze knowledge graph
-llm-wiki graph --insights
-
-# List all pages
-llm-wiki index
+# Now use your AI agent:
+#   /ingest sources/some-article.md
+#   /query "What do we know about X?"
+#   /lint
+#   /research "deep dive on Y"
 ```
 
-## Project Structure (after init)
+## Vault Structure
 
 ```
 my-wiki/
-├── llm-wiki.toml          # Configuration
-├── purpose.md              # Wiki direction and intent
-├── schema.md               # Structure rules and page types
-├── index.md                # Content catalog
-├── log.md                  # Operation log
-├── wiki/                   # Wiki pages (Obsidian-compatible)
-│   ├── concepts/
-│   ├── entities/
-│   ├── topics/
-│   └── insights/
-├── sources/                # Raw, immutable source documents
-├── .agents/
-│   ├── AGENTS.md           # Agent instructions
-│   └── skills/
-│       ├── ingest.md       # Two-step ingestion skill
-│       ├── query.md        # Search + knowledge compounding
-│       ├── lint.md         # Health check + self-repair
-│       └── deep-research.md
-└── .claude/
-    └── skills -> ../.agents/skills
+├── purpose.md             # Wiki scope and audience
+├── schema.md              # Page types, naming conventions, frontmatter rules
+├── log.md                 # Append-only operation log
+├── AGENTS.md              # Agent routing to skills
+├── wiki/                  # AI-maintained wiki pages (Obsidian-compatible)
+├── sources/               # Raw, immutable source documents
+│   └── YYYY-MM-DD/        # Date-based storage
+└── .llm-wiki/
+    ├── config.toml        # Vault configuration
+    └── sync-state.json    # Incremental sync tracking
 ```
 
 ## Agent Skills
 
-### Ingest
+Four skills that AI agents use to operate the wiki:
 
-Two-step chain-of-thought process:
-1. **Analyze**: Extract entities, concepts, relationships, contradictions
-2. **Generate**: Create/update wiki pages with frontmatter, wikilinks, and cross-references
-
-### Query
-
-Search + knowledge compounding:
-1. Run `llm-wiki search` for relevant pages
-2. Follow graph links for related context
-3. Synthesize answer with citations
-4. Write valuable answers back as new wiki pages
-
-### Lint
-
-Self-healing health check:
-1. Run `llm-wiki status` for structural issues
-2. Run `llm-wiki graph --insights` for knowledge gaps
-3. Auto-fix: broken links, missing frontmatter, orphan pages
-4. Flag contradictions and stale content for human review
-
-### Deep Research
-
-Web research to fill knowledge gaps:
-1. Identify gaps from graph insights
-2. Research with web search tools
-3. Save sources and ingest into wiki
+| Skill | Usage | What it does |
+|-------|-------|-------------|
+| **ingest** | `/ingest <path>` | Read source → extract entities → create/update wiki pages with `[[wikilinks]]` |
+| **query** | `/query <question>` | Search wiki → synthesize answer → write back valuable insights (knowledge compounding) |
+| **lint** | `/lint` | Health check: broken links, orphans, contradictions, stale content → auto-fix safe issues |
+| **research** | `/research <topic>` | Go beyond wiki: search web → save sources → ingest → synthesize report |
 
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `llm-wiki init` | Initialize a new wiki project |
-| `llm-wiki status` | Show statistics and health checks |
-| `llm-wiki search <query>` | Hybrid search (BM25 + vector + graph) |
-| `llm-wiki graph` | Build and analyze knowledge graph |
-| `llm-wiki index` | List all wiki pages |
-| `llm-wiki sync` | Sync to DB9 (vector index + backup) |
+| `llm-wiki init [dir]` | Initialize a new wiki vault |
+| `llm-wiki search <query>` | BM25 keyword search (+ DB9 vector search if configured) |
+| `llm-wiki graph [--json]` | Analyze wikilink graph: communities, hubs, orphans, wanted pages |
+| `llm-wiki status` | Wiki statistics and health summary |
+| `llm-wiki sync [--dry-run]` | Track changes (mtime + SHA256), sync embeddings to DB9 |
+| `llm-wiki skill [name]` | List skills or print skill content for agent installation |
 
-## Knowledge Graph
+## Search
 
-The four-signal relevance model builds a weighted graph:
+**BM25 keyword search** with CJK bigram tokenization (Chinese/Japanese/Korean support).
 
-| Signal | Weight | Description |
-|--------|--------|-------------|
-| Direct link | ×3.0 | `[[wikilink]]` connections |
-| Source overlap | ×4.0 | Pages sharing the same source files |
-| Adamic-Adar | ×1.5 | Shared neighbors (weighted by inverse log degree) |
-| Type affinity | ×1.0 | Same page type bonus |
+When DB9 is configured, search becomes **hybrid**: BM25 + vector similarity, merged via Reciprocal Rank Fusion (RRF, K=60).
 
-Louvain community detection finds knowledge clusters. Low-cohesion communities (<0.15) are flagged.
-
-## Hybrid Search
-
-Three search streams merged with Reciprocal Rank Fusion (RRF):
-
-1. **BM25** — Keyword matching with stemming and CJK bigrams
-2. **Vector** — Semantic similarity via DB9 `embedding()` (when enabled)
-3. **Graph traversal** — Expand from search hits through 1-2 hops
-
-## Configuration
-
-`llm-wiki.toml`:
-
-```toml
-[wiki]
-name = "My Wiki"
-language = "zh"
-template = "research"
-
-[db9]
-enabled = true
-
-[search]
-bm25_weight = 1.0
-vector_weight = 1.0
-graph_weight = 0.5
-
-[graph]
-direct_link_weight = 3.0
-source_overlap_weight = 4.0
-adamic_adar_weight = 1.5
-type_affinity_weight = 1.0
-community_cohesion_threshold = 0.15
+```bash
+llm-wiki search "distributed consensus"
+llm-wiki search "分布式共识" -n 5
+llm-wiki search "raft algorithm" --bm25-only
 ```
 
-## Templates
+## Graph Analysis
 
-| Template | Description |
-|----------|-------------|
-| `research` | Academic papers, technical reports, research landscape |
-| `reading` | Books, articles, personal intellectual framework |
-| `business` | Market intelligence, competitive analysis, strategy |
-| `general` | General-purpose knowledge base |
+Analyzes the `[[wikilink]]` graph to find structure in your knowledge:
 
-## Chrome Web Clipper
+- **Communities** — Topic clusters detected via label propagation
+- **Hub pages** — Most connected pages (high incoming + outgoing links)
+- **Orphan pages** — Pages with no incoming links
+- **Wanted pages** — Pages linked but not yet created
 
-The `extension/` directory contains a Manifest V3 Chrome extension that clips web pages to your wiki's `sources/` directory.
+```bash
+llm-wiki graph          # Human-readable output
+llm-wiki graph --json   # Machine-readable for programmatic use
+```
+
+## DB9 Integration (Optional)
+
+[DB9](https://db9.ai) adds vector search and cloud sync:
+
+- Server-side embeddings via `embedding(text)::vector(1024)` — no local model needed
+- HNSW vector index for semantic similarity search
+- Reverse source lookup: "which wiki pages reference this source?"
+
+Enable by adding to `.llm-wiki/config.toml`:
+
+```toml
+[db9]
+url = "your-db9-connection-string"
+```
+
+Then run `llm-wiki sync` to upload embeddings.
 
 ## Obsidian Compatibility
 
-The wiki directory is fully Obsidian-compatible:
-- Standard YAML frontmatter
-- `[[wikilink]]` syntax (shortest unique filename)
-- Can be opened directly as an Obsidian vault
+The `wiki/` directory is a standard Obsidian vault:
+- YAML frontmatter
+- `[[wikilink]]` cross-references
+- Open directly in Obsidian for browsing, graph view, and editing
 
-## DB9 Integration
+## Configuration
 
-[DB9](https://db9.ai) provides serverless PostgreSQL with built-in vector search:
-- `embedding()` function for automatic vector generation
-- HNSW index for fast similarity search
-- fs9 file system for cloud backup
-- Team collaboration via shared database
+`.llm-wiki/config.toml`:
+
+```toml
+[vault]
+name = "My Wiki"
+language = "en"
+
+# Optional: DB9 for vector search + cloud sync
+# [db9]
+# url = "your-db9-connection-string"
+```
 
 ## Tech Stack
 
-- TypeScript (ESM, ES2022)
-- [tsup](https://tsup.egoist.dev/) for bundling
-- [commander](https://github.com/tj/commander.js/) for CLI
-- [vitest](https://vitest.dev/) for testing
-- [get-db9](https://www.npmjs.com/package/get-db9) for DB9 integration
-- [yaml](https://github.com/eemeli/yaml) for frontmatter parsing
+- TypeScript (ESM, Node 20+)
+- [Commander.js](https://github.com/tj/commander.js/) — CLI framework
+- [gray-matter](https://github.com/jonschlinkert/gray-matter) — Frontmatter parsing
+- [pg](https://node-postgres.com/) — PostgreSQL client (for DB9)
+- [tsup](https://tsup.egoist.dev/) — Build
+- [Vitest](https://vitest.dev/) — Testing
 
 ## License
 
