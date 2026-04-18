@@ -1,106 +1,72 @@
-# Ingest — Source Document to Wiki Pages
+# Ingest
 
-You are an AI agent performing knowledge ingestion for an LLM Wiki. Your job is to read a source document, extract knowledge, and create or update interconnected Wiki pages.
+Process new source material into the wiki.
 
-## Context
+## Usage
 
-The LLM Wiki follows a three-layer architecture:
-- **sources/** — Raw, immutable source documents (articles, papers, notes, web clips)
-- **wiki/** — AI-maintained Markdown pages with cross-references and summaries
-- **schema.md** — Defines the Wiki's domain, page types, and naming conventions
-- **purpose.md** — Describes the Wiki's purpose and scope
+`/ingest <path-or-url>` — Ingest a file, directory, or URL into the wiki.
 
-## Input
+## Steps
 
-You will be given a source document to ingest. Before starting, read:
-1. `purpose.md` — to understand what this Wiki is about
-2. `schema.md` — to understand page types, naming conventions, and structure rules
-3. The source document itself
+1. Read `purpose.md` and `schema.md` to understand the wiki's scope, page types, naming conventions, and structure rules.
+2. Read the source material provided by the user.
+3. Decide whether this ingest needs discussion before editing wiki pages:
+   - If the wiki already has a clear structure and the change is only a small addition or minor refinement that fits the existing framework, proceed directly.
+   - If the ingest would change structure, naming, scope, page boundaries, or linking strategy in a non-obvious way, discuss the plan with the user first.
+   - When discussion is needed, summarize the proposed new pages, updated pages, naming, and link strategy before editing.
+4. If the wiki is still empty, do not start writing pages immediately:
+   - First discuss and agree on the wiki's organization rules with the user.
+   - Cover at least directory structure, whether to use subdirectories, wiki language, and filename format.
+   - After agreement, write those rules into `schema.md` before ingesting content.
+5. Copy the raw source into `sources/` using date-based storage rules:
+   - A single file goes to `sources/YYYY-MM-DD/<original-filename>`
+   - A directory goes to `sources/YYYY-MM-DD/<original-directory>/`
+   - Preserve the original file or directory name whenever possible.
+   - If a name already exists inside that date folder, rename with a version suffix.
+6. Run `llm-wiki search` or scan `wiki/` to see existing wiki pages.
+7. Analyze the source content and decide:
+   - Which new wiki pages to create
+   - Which existing pages to update with new information
+   - What cross-references to add using `[[wikilinks]]`
+   - A single source may touch 5–15 wiki pages.
+8. Write/update markdown files in `wiki/` with proper frontmatter:
+   ```yaml
+   ---
+   title: Page Title
+   description: One-line summary
+   aliases: [alternate names]
+   tags: [domain-specific tags from schema.md]
+   sources: [YYYY-MM-DD/source-filename.md]
+   created: YYYY-MM-DD
+   updated: YYYY-MM-DD
+   ---
+   ```
+   - The `sources` field is **required**. List paths relative to `sources/`, without the `sources/` prefix.
+   - When updating an existing page, **merge** new information. Do not overwrite unless contradicted by a more authoritative or recent source. If contradicted, note the conflict with both sources cited.
+   - Use `[[wikilinks]]` generously — every entity mention that has (or should have) its own page gets a link.
+   - Keep pages focused on a single topic. If a section grows too large, split into its own page.
+   - Add a `## Related` section at the bottom: `- [[page-name]] — one-line relationship description`
+9. Add frontmatter to the source document:
+   ```yaml
+   ---
+   ingested: YYYY-MM-DD
+   wiki_pages: [list of wiki pages created/updated]
+   ---
+   ```
+10. Append an entry to `log.md`:
+    ```
+    ## [YYYY-MM-DD] ingest | Source Title
+    - created `page-name` — reason
+    - updated `page-name` — what changed
+    ```
+11. Run `llm-wiki sync` to update the search index.
 
-## Procedure
+## Guidelines
 
-### Step 1: Analyze the Source
-
-Read the source document carefully. Identify:
-- **Key entities** — people, projects, concepts, technologies, organizations
-- **Key claims** — facts, relationships, opinions, data points
-- **Relevance** — how this document relates to the Wiki's purpose (from `purpose.md`)
-
-If the source is not relevant to the Wiki's purpose, stop and report: "Source is outside the Wiki's scope."
-
-### Step 2: Plan Wiki Updates
-
-Determine which Wiki pages need to be created or updated. For each page:
-- Check if `wiki/<page-name>.md` already exists
-- If it exists, read it to understand current content
-- Decide: **create new** or **merge into existing**
-
-Follow `schema.md` for:
-- Page naming conventions (e.g., kebab-case, entity-type prefix)
-- Required frontmatter fields
-- Page structure templates
-
-### Step 3: Write/Update Wiki Pages
-
-For each page, apply these rules:
-
-**Frontmatter** (YAML):
-```yaml
----
-title: Page Title
-aliases: [alternate names]
-tags: [domain-specific tags from schema.md]
-sources: [relative paths to source documents that contributed]
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
----
-```
-
-**Content rules**:
+- Each page should focus on a single topic.
 - Write in clear, concise prose. Summarize, don't copy.
-- Use `[[wikilinks]]` to cross-reference other Wiki pages. Link generously — every entity mention that has (or should have) its own page gets a link.
-- When updating an existing page, **merge** new information. Do not overwrite existing content unless it's contradicted by a more authoritative or more recent source. If contradicted, note the conflict with both sources cited.
-- Add the source document to the `sources` list in frontmatter.
-- Keep pages focused. If a section grows too large, split it into its own page and link back.
-
-**Cross-referencing**:
-- After writing all pages, review them for missing cross-references.
-- If you reference an entity that doesn't have a Wiki page yet, still use `[[wikilink]]` — it creates a discoverable "wanted page."
-- Add a `## Related` section at the bottom listing related pages: `- [[page-name]] — one-line description of relationship`
-
-### Step 4: Update Source Index
-
-Add a YAML frontmatter block to the source document (if not already present):
-```yaml
----
-ingested: YYYY-MM-DD
-wiki_pages: [list of wiki pages created/updated from this source]
----
-```
-
-If the source already has frontmatter, add or update the `ingested` and `wiki_pages` fields.
-
-## Output Checklist
-
-After ingestion, verify:
-- [ ] All key entities from the source have Wiki pages (new or updated)
-- [ ] All pages follow `schema.md` conventions
-- [ ] Cross-references (`[[wikilinks]]`) connect related pages
-- [ ] Source document has `ingested` and `wiki_pages` metadata
-- [ ] No content was lost from existing Wiki pages during merge
-- [ ] `sources` frontmatter in each updated Wiki page includes the new source
-
-## Example
-
-Given a source `sources/karpathy-llm-os-2024.md` about Karpathy's "LLM OS" talk:
-
-1. Read purpose.md → Wiki is about AI/ML research
-2. Read schema.md → entity pages use `kebab-case`, concept pages get `concept-` prefix
-3. Analyze source → entities: Andrej Karpathy, LLM OS; concepts: tool use, System 2 thinking
-4. Create/update:
-   - `wiki/andrej-karpathy.md` — add LLM OS talk reference
-   - `wiki/concept-llm-os.md` — new page summarizing the concept
-   - `wiki/concept-tool-use.md` — update with Karpathy's framing
-   - `wiki/concept-system-2-thinking.md` — update with LLM OS context
-5. Add cross-references between all pages
-6. Mark source as ingested
+- Always add cross-references between related pages.
+- If you reference an entity that doesn't have a wiki page yet, still use `[[wikilink]]` — it creates a discoverable "wanted page."
+- Ingestion should be collaborative when structure, naming, or scope is uncertain, but straightforward additions within an established framework can be applied directly.
+- Use descriptive slugs following `schema.md` conventions.
+- The `sources` field in frontmatter is mandatory — every claim must be traceable.

@@ -1,104 +1,84 @@
-# Lint — Wiki Health Check
+# Lint
 
-You are an AI agent performing a health check on an LLM Wiki. Your job is to identify quality issues — contradictions, orphan pages, stale content, missing cross-references — and fix them.
+Health-check the wiki for issues.
 
-## Context
+## Usage
 
-The LLM Wiki follows a three-layer architecture:
-- **sources/** — Raw, immutable source documents
-- **wiki/** — AI-maintained Markdown pages with cross-references
-- **schema.md** — Defines the Wiki's domain, page types, and naming conventions
-- **purpose.md** — Describes the Wiki's purpose and scope
+`/lint` — Run a full wiki health check.
+`/lint <page>` — Lint a specific page and its immediate neighbors.
+`/lint --fix` — Auto-fix safe issues after reporting.
 
-## Input
+## Steps
 
-You may be given:
-- A specific page or set of pages to lint
-- A category/tag to lint
-- No input (lint the entire Wiki)
+1. Read `schema.md` to understand expected structure, naming conventions, and required frontmatter fields.
+2. Scan all pages in `wiki/` and all files in `sources/`.
+3. Build a link graph — for each page, extract all `[[wikilinks]]`.
+4. Check for issues in three categories:
 
-## Procedure
+### Structural Issues
+- **Broken links**: `[[wikilinks]]` pointing to non-existent pages
+- **Orphan pages**: Pages with no incoming links from other pages
+- **Missing frontmatter**: Pages lacking required fields (title, description, tags, sources, updated)
+- **Naming violations**: Page names that don't follow `schema.md` conventions
+- **Duplicate topics**: Multiple pages covering the same entity/concept (check `aliases`)
 
-### Step 1: Scan
+### Content Issues
+- **Contradictions**: Pages making conflicting claims about the same topic (compare pages sharing `[[wikilinks]]` or tags)
+- **Stale content**: Pages whose `updated` date is older than their sources' modification dates
+- **Unsourced claims**: Pages with empty or missing `sources` in frontmatter
+- **Shallow pages**: Pages with < 3 sentences (excluding frontmatter) that should be expanded or merged
 
-Read `schema.md` to understand the expected structure. Then scan the Wiki:
+### Source Issues
+- **Uningested sources**: Files in `sources/` without an `ingested` date in frontmatter
+- **Source drift**: Sources whose content changed since their `ingested` date
 
-1. **List all pages** in `wiki/`
-2. **List all sources** in `sources/`
-3. **Build a link graph** — for each page, extract all `[[wikilinks]]`
+5. Present a structured report:
+   ```
+   ## Lint Report — YYYY-MM-DD
 
-### Step 2: Check for Issues
+   ### Summary
+   - Total pages: N | Total sources: N
+   - Issues: N (critical: X, warning: Y, info: Z)
 
-Run these checks in order:
+   ### Critical
+   - **Broken link**: [[page-a]] → [[nonexistent]]
+   - **Contradiction**: [[page-b]] vs [[page-c]] on topic Z
 
-#### 2a. Structural Issues
-- **Orphan pages** — Wiki pages with no incoming `[[wikilinks]]` from other pages
-- **Broken links** — `[[wikilinks]]` that point to non-existent pages (wanted pages)
-- **Missing frontmatter** — Pages without required YAML fields per `schema.md`
-- **Naming violations** — Page names that don't follow `schema.md` conventions
-- **Duplicate topics** — Multiple pages covering the same entity/concept (check `aliases`)
+   ### Warning
+   - **Orphan**: [[page-d]] — no incoming links
+   - **Stale**: [[page-e]] — not updated since YYYY-MM-DD
+   - **Unsourced**: [[page-f]] — no sources listed
 
-#### 2b. Content Issues
-- **Contradictions** — Pages that make conflicting claims about the same topic. Compare claims across pages that share `[[wikilinks]]` or tags.
-- **Stale content** — Pages whose `updated` date is significantly older than their sources' modification dates (source was updated but Wiki page wasn't)
-- **Unsourced claims** — Pages with empty or missing `sources` in frontmatter
-- **Shallow pages** — Pages with very little content (< 3 sentences excluding frontmatter) that should either be expanded or merged
+   ### Info
+   - **Shallow**: [[page-g]] — 2 sentences, consider expanding
+   - **Wanted**: [[unwritten-page]] — linked from 3 pages
+   - **Uningested**: sources/YYYY-MM-DD/new-article.md
+   ```
 
-#### 2c. Source Issues
-- **Uningested sources** — Files in `sources/` without an `ingested` date in their frontmatter
-- **Source drift** — Sources whose content has changed since their `ingested` date (file modification date > ingested date)
-
-### Step 3: Report
-
-Generate a structured report:
-
-```markdown
-## Lint Report — YYYY-MM-DD
-
-### Summary
-- Total pages: N
-- Total sources: N
-- Issues found: N (critical: X, warning: Y, info: Z)
-
-### Critical Issues
-[Issues that cause broken functionality or data loss]
-
-- **Broken link**: [[page-a]] links to [[nonexistent-page]]
-- **Contradiction**: [[page-b]] says X, but [[page-c]] says Y (re: topic Z)
-
-### Warnings
-[Issues that degrade Wiki quality]
-
-- **Orphan page**: [[page-d]] has no incoming links
-- **Stale content**: [[page-e]] not updated since YYYY-MM-DD, but source was modified on YYYY-MM-DD
-- **Unsourced**: [[page-f]] has no sources listed
-
-### Info
-[Suggestions for improvement]
-
-- **Shallow page**: [[page-g]] has only 2 sentences — consider expanding or merging
-- **Wanted page**: [[mentioned-but-unwritten]] is linked from 3 pages but doesn't exist
-- **Uningested source**: sources/new-article.md has not been ingested
-```
-
-### Step 4: Auto-Fix (if requested)
-
-If asked to fix issues (not just report), apply these fixes:
+6. If `--fix` is requested, apply safe fixes:
 
 | Issue | Auto-Fix |
 |-------|----------|
 | Broken link | Remove the link or create a stub page |
 | Missing frontmatter | Add required fields with sensible defaults |
-| Orphan page | Add links from related pages (find by tag/topic match) |
+| Orphan page | Add links from related pages (find by tag/topic) |
 | Stale content | Re-read source and update the page (mini-ingest) |
-| Duplicate topics | Merge into one page, redirect the other via alias |
-| Shallow page | Expand from sources, or merge into a related page |
+| Duplicate topics | Merge into one page, add alias for the other |
+| Shallow page | Expand from sources, or merge into related page |
 
-**Never auto-fix contradictions** — report them for human review. Contradictions require judgment about which source is more authoritative.
+7. **Never auto-fix contradictions** — report for human review.
+8. Append to `log.md`:
+   ```
+   ## [YYYY-MM-DD] lint | Health Check
+   - fixed `page-name` — fix description
+   - flagged `page-name` — needs human review
+   ```
+9. Run `llm-wiki sync` if any changes were made.
 
-## Running Modes
+## Guidelines
 
-- `lint` — Full scan, report only
-- `lint --fix` — Full scan, auto-fix what's safe, report the rest
-- `lint <page>` — Lint a specific page and its immediate neighbors
-- `lint --sources` — Only check source ingestion status
+- Always present findings before making changes.
+- Wait for user confirmation before applying fixes (unless `--fix` was explicitly requested).
+- Prefer merging over deleting when handling duplicates.
+- Contradictions require human judgment — never auto-resolve.
+- Run lint periodically to keep the wiki healthy as it grows.
