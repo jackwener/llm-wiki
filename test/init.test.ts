@@ -24,7 +24,6 @@ describe('init command', () => {
     expect(existsSync(join(testDir, 'purpose.md'))).toBe(true);
     expect(existsSync(join(testDir, 'schema.md'))).toBe(true);
     expect(existsSync(join(testDir, 'log.md'))).toBe(true);
-    expect(existsSync(join(testDir, 'AGENTS.md'))).toBe(true);
     expect(existsSync(join(testDir, '.llm-wiki/config.toml'))).toBe(true);
   });
 

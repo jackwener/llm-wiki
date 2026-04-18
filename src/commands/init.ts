@@ -62,45 +62,6 @@ const LOG_TEMPLATE = `# Change Log
 Append-only record of wiki operations. Format: \`[date] verb | subject\`
 `;
 
-function generateAgentsMd(): string {
-  return `# AGENTS.md
-
-This wiki is managed by AI agents using llm-wiki skills.
-
-## Available Skills
-
-| Skill | Purpose | Usage |
-|-------|---------|-------|
-| ingest | Process source material into wiki pages | \`/ingest <path-or-url>\` |
-| query | Search wiki and synthesize answers | \`/query <question>\` |
-| lint | Health-check the wiki | \`/lint\` |
-| research | Deep-dive investigation with external sources | \`/research <topic>\` |
-
-## How to Install Skills
-
-Run \`llm-wiki skill\` to get the skills directory path, then copy the skill files to your workspace:
-
-- Claude Code: \`<workspace>/.claude/skills/\`
-- Codex: \`<workspace>/.agents/skills/\`
-
-## Key Files
-
-- \`purpose.md\` — Wiki scope and audience
-- \`schema.md\` — Page types, naming conventions, frontmatter rules
-- \`log.md\` — Change log (append-only)
-- \`wiki/\` — AI-maintained wiki pages
-- \`sources/\` — Raw source documents (immutable)
-
-## Rules
-
-1. Always read \`purpose.md\` and \`schema.md\` before any operation
-2. Never modify files in \`sources/\` — they are immutable raw inputs
-3. Use \`[[wikilinks]]\` for cross-references between wiki pages
-4. Append every operation to \`log.md\`
-5. Run \`llm-wiki sync\` after making changes
-`;
-}
-
 export const initCommand = new Command('init')
   .description('Initialize a new llm-wiki vault')
   .argument('[directory]', 'directory to initialize', '.')
@@ -126,7 +87,6 @@ export const initCommand = new Command('init')
       [paths.schema, SCHEMA_TEMPLATE],
       [paths.config, CONFIG_TEMPLATE],
       [paths.log, LOG_TEMPLATE],
-      [paths.agentsMd, generateAgentsMd()],
     ];
 
     for (const [path, content] of filesToCreate) {
@@ -143,12 +103,11 @@ export const initCommand = new Command('init')
     console.log('  purpose.md      — Wiki purpose and scope');
     console.log('  schema.md       — Page conventions and structure');
     console.log('  log.md          — Change log');
-    console.log('  AGENTS.md       — Agent routing file');
     console.log('  .llm-wiki/      — Config and state');
     console.log('');
     console.log('Next steps:');
     console.log('  1. Edit purpose.md to define your wiki\'s scope');
     console.log('  2. Edit schema.md to set naming conventions');
-    console.log('  3. Add source documents to sources/');
+    console.log('  3. Run `llm-wiki skill install` to install the wiki skill');
     console.log('  4. Use your AI agent with /ingest to start building the wiki');
   });

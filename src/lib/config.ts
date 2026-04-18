@@ -56,7 +56,6 @@ export function vaultPaths(root: string) {
     purpose: join(root, 'purpose.md'),
     schema: join(root, 'schema.md'),
     log: join(root, 'log.md'),
-    agentsMd: join(root, 'AGENTS.md'),
     config: join(root, CONFIG_PATH),
     syncState: join(root, '.llm-wiki/sync-state.json'),
     lintResult: join(root, '.llm-wiki/lint-result.yaml'),

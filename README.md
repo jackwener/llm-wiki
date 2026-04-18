@@ -39,7 +39,6 @@ my-wiki/
 ├── purpose.md             # Wiki scope and audience
 ├── schema.md              # Page types, naming conventions, frontmatter rules
 ├── log.md                 # Append-only operation log
-├── AGENTS.md              # Agent routing to skills
 ├── wiki/                  # AI-maintained wiki pages (Obsidian-compatible)
 ├── sources/               # Raw, immutable source documents
 │   └── YYYY-MM-DD/        # Date-based storage
@@ -48,12 +47,12 @@ my-wiki/
     └── sync-state.json    # Incremental sync tracking
 ```
 
-## Agent Skills
+## Agent Skill
 
-Four skills that AI agents use to operate the wiki:
+One unified skill (`llm-wiki.md`) with four operations:
 
-| Skill | Usage | What it does |
-|-------|-------|-------------|
+| Operation | Usage | What it does |
+|-----------|-------|-------------|
 | **ingest** | `/ingest <path>` | Read source → extract entities → create/update wiki pages with `[[wikilinks]]` |
 | **query** | `/query <question>` | Search wiki → synthesize answer → write back valuable insights (knowledge compounding) |
 | **lint** | `/lint` | Health check: broken links, orphans, contradictions, stale content → auto-fix safe issues |

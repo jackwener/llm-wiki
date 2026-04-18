@@ -45,7 +45,7 @@ skillCommand
     if (both || opts.claude) {
       const dir = join(workspace, '.claude', 'skills');
       const files = installToDir(skillsDir, dir);
-      console.log(`Installed ${files.length} skills to ${dir}/`);
+      console.log(`Installed ${files.length} skill${files.length === 1 ? '' : 's'} to ${dir}/`);
       for (const file of files) console.log(`  ${file.replace('.md', '')}`);
     }
 
@@ -53,7 +53,7 @@ skillCommand
       const dir = join(workspace, '.agents', 'skills');
       const files = installToDir(skillsDir, dir);
       if (both) console.log('');
-      console.log(`Installed ${files.length} skills to ${dir}/`);
+      console.log(`Installed ${files.length} skill${files.length === 1 ? '' : 's'} to ${dir}/`);
       for (const file of files) console.log(`  ${file.replace('.md', '')}`);
     }
   });
