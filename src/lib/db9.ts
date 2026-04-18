@@ -115,11 +115,11 @@ export class DB9Client {
    */
   async vectorSearch(query: string, limit: number = 10): Promise<DB9SearchResult[]> {
     const result = await this.pool.query(
-      `SELECT slug, title,
-              1 - (embedding <=> embedding($1)::vector(1024)) AS similarity
-       FROM wiki_index
+      `WITH q AS (SELECT embedding($1)::vector(1024) AS qv)
+       SELECT slug, title, 1 - (embedding <=> q.qv) AS similarity
+       FROM wiki_index, q
        WHERE embedding IS NOT NULL
-       ORDER BY embedding <=> embedding($1)::vector(1024)
+       ORDER BY embedding <=> q.qv
        LIMIT $2`,
       [query, limit]
     );

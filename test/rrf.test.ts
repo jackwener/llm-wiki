@@ -1,29 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-// Inline the RRF function for unit testing (same logic as in search.ts)
-function rrfMerge(
-  bm25Results: { slug: string; score: number }[],
-  vectorResults: { slug: string; score: number }[],
-  limit: number,
-  k: number = 60
-): { slug: string; score: number }[] {
-  const scores = new Map<string, number>();
-
-  for (let i = 0; i < bm25Results.length; i++) {
-    const slug = bm25Results[i].slug;
-    scores.set(slug, (scores.get(slug) ?? 0) + 1 / (k + i + 1));
-  }
-
-  for (let i = 0; i < vectorResults.length; i++) {
-    const slug = vectorResults[i].slug;
-    scores.set(slug, (scores.get(slug) ?? 0) + 1 / (k + i + 1));
-  }
-
-  return [...scores.entries()]
-    .map(([slug, score]) => ({ slug, score }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
-}
+import { rrfMerge } from '../src/lib/search.js';
 
 describe('RRF merge', () => {
   it('should boost pages that appear in both lists', () => {
@@ -67,7 +43,6 @@ describe('RRF merge', () => {
     ];
     const vector: { slug: string; score: number }[] = [];
     const result = rrfMerge(bm25, vector, 10);
-    // 'a' is rank 1, 'b' is rank 2, so a's RRF score should be higher
     expect(result[0].slug).toBe('a');
     expect(result[0].score).toBeGreaterThan(result[1].score);
   });

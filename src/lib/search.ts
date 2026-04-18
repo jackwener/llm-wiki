@@ -125,3 +125,31 @@ export function bm25Search(pages: WikiPage[], query: string, limit: number = 10)
   results.sort((a, b) => b.score - a.score);
   return results.slice(0, limit);
 }
+
+/**
+ * Reciprocal Rank Fusion (RRF) — merges ranked lists from different search methods.
+ * K=60 is the standard constant.
+ */
+export function rrfMerge(
+  bm25Results: { slug: string; score: number }[],
+  vectorResults: { slug: string; score: number }[],
+  limit: number,
+  k: number = 60
+): { slug: string; score: number }[] {
+  const scores = new Map<string, number>();
+
+  for (let i = 0; i < bm25Results.length; i++) {
+    const slug = bm25Results[i].slug;
+    scores.set(slug, (scores.get(slug) ?? 0) + 1 / (k + i + 1));
+  }
+
+  for (let i = 0; i < vectorResults.length; i++) {
+    const slug = vectorResults[i].slug;
+    scores.set(slug, (scores.get(slug) ?? 0) + 1 / (k + i + 1));
+  }
+
+  return [...scores.entries()]
+    .map(([slug, score]) => ({ slug, score }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
