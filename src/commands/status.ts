@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { existsSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { requireVaultRoot, vaultPaths, loadConfig } from '../lib/config.js';
 import { loadWikiPages, listMarkdownFiles } from '../lib/wiki.js';
 import { loadSyncState } from '../lib/sync.js';
@@ -31,8 +32,18 @@ export const statusCommand = new Command('status')
 
     // Health checks
     const issues: string[] = [];
-    if (!existsSync(paths.purpose)) issues.push('purpose.md missing');
-    if (!existsSync(paths.schema)) issues.push('schema.md missing');
+    const legacyRename: [string, string][] = [
+      ['purpose.md', 'wiki-purpose.md'],
+      ['schema.md', 'wiki-schema.md'],
+      ['log.md', 'wiki-log.md'],
+    ];
+    for (const [oldName, newName] of legacyRename) {
+      if (!existsSync(join(root, newName)) && existsSync(join(root, oldName))) {
+        issues.push(`legacy ${oldName} detected — rename to ${newName} (v0.4.2 vault file rename)`);
+      }
+    }
+    if (!existsSync(paths.purpose)) issues.push('wiki-purpose.md missing');
+    if (!existsSync(paths.schema)) issues.push('wiki-schema.md missing');
 
     const pagesWithoutSources = pages.filter(p => p.sources.length === 0);
     if (pagesWithoutSources.length > 0) {

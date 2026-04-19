@@ -36,9 +36,9 @@ llm-wiki skill install --codex      # Codex only
 
 ```
 my-wiki/
-├── purpose.md             # Wiki scope and audience
-├── schema.md              # Page types, naming conventions, frontmatter rules
-├── log.md                 # Append-only operation log
+├── wiki-purpose.md        # Wiki scope and audience
+├── wiki-schema.md         # Page types, naming conventions, frontmatter rules
+├── wiki-log.md            # Append-only operation log
 ├── wiki/                  # AI-maintained wiki pages (Obsidian-compatible)
 ├── sources/               # Raw, immutable source documents
 │   └── YYYY-MM-DD/        # Date-based storage

@@ -21,10 +21,14 @@ describe('init command', () => {
     execSync(`node ${CLI} init`, { cwd: testDir });
     expect(existsSync(join(testDir, 'wiki'))).toBe(true);
     expect(existsSync(join(testDir, 'sources'))).toBe(true);
-    expect(existsSync(join(testDir, 'purpose.md'))).toBe(true);
-    expect(existsSync(join(testDir, 'schema.md'))).toBe(true);
-    expect(existsSync(join(testDir, 'log.md'))).toBe(true);
+    expect(existsSync(join(testDir, 'wiki-purpose.md'))).toBe(true);
+    expect(existsSync(join(testDir, 'wiki-schema.md'))).toBe(true);
+    expect(existsSync(join(testDir, 'wiki-log.md'))).toBe(true);
     expect(existsSync(join(testDir, '.llm-wiki/config.toml'))).toBe(true);
+    // v0.4.2 rename: old unprefixed names must not be created
+    expect(existsSync(join(testDir, 'purpose.md'))).toBe(false);
+    expect(existsSync(join(testDir, 'schema.md'))).toBe(false);
+    expect(existsSync(join(testDir, 'log.md'))).toBe(false);
   });
 
   it('should generate agent bootstrap files', () => {

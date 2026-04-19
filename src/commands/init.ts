@@ -69,23 +69,23 @@ This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki ope
 
 ## Quick Start
 
-- Read \`purpose.md\` — wiki scope and audience
-- Read \`schema.md\` — structure and naming rules
+- Read \`wiki-purpose.md\` — wiki scope and audience
+- Read \`wiki-schema.md\` — structure and naming rules
 - Use \`/ingest <path>\`, \`/query <question>\`, \`/lint\`, \`/research <topic>\`
 
 ## Layout
 
 - \`wiki/\` — AI-maintained wiki pages (Obsidian-compatible)
 - \`sources/\` — Raw source documents, date-partitioned (immutable)
-- \`log.md\` — Append-only operation log
+- \`wiki-log.md\` — Append-only operation log
 - \`.llm-wiki/\` — Config and sync state
 
 ## Rules
 
-1. Always read \`purpose.md\` and \`schema.md\` before any operation
+1. Always read \`wiki-purpose.md\` and \`wiki-schema.md\` before any operation
 2. Never modify files in \`sources/\` — they are immutable raw inputs
 3. Use \`[[wikilinks]]\` for cross-references between wiki pages
-4. Append every operation to \`log.md\`
+4. Append every operation to \`wiki-log.md\`
 5. Run \`llm-wiki sync\` after making changes
 `;
 
@@ -95,23 +95,23 @@ This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki ope
 
 ## Quick Start
 
-- Read \`purpose.md\` — wiki scope and audience
-- Read \`schema.md\` — structure and naming rules
+- Read \`wiki-purpose.md\` — wiki scope and audience
+- Read \`wiki-schema.md\` — structure and naming rules
 - Use \`/ingest <path>\`, \`/query <question>\`, \`/lint\`, \`/research <topic>\`
 
 ## Layout
 
 - \`wiki/\` — AI-maintained wiki pages
 - \`sources/\` — Raw source documents, date-partitioned (immutable)
-- \`log.md\` — Append-only operation log
+- \`wiki-log.md\` — Append-only operation log
 - \`.llm-wiki/\` — Config and sync state
 
 ## Rules
 
-1. Always read \`purpose.md\` and \`schema.md\` before any operation
+1. Always read \`wiki-purpose.md\` and \`wiki-schema.md\` before any operation
 2. Never modify files in \`sources/\` — they are immutable raw inputs
 3. Use \`[[wikilinks]]\` for cross-references between wiki pages
-4. Append every operation to \`log.md\`
+4. Append every operation to \`wiki-log.md\`
 5. Run \`llm-wiki sync\` after making changes
 `;
 
@@ -166,20 +166,20 @@ export const initCommand = new Command('init')
     console.log(`Initialized llm-wiki vault in ${targetDir}`);
     console.log('');
     console.log('Created:');
-    console.log('  wiki/           — AI-maintained wiki pages');
-    console.log('  sources/        — Raw source documents');
-    console.log('  purpose.md      — Wiki purpose and scope');
-    console.log('  schema.md       — Page conventions and structure');
-    console.log('  log.md          — Change log');
-    console.log('  CLAUDE.md       — Agent bootstrap (Claude Code)');
-    console.log('  AGENTS.md       — Agent bootstrap (Codex)');
-    console.log('  .llm-wiki/      — Config and state');
-    console.log(`  .claude/skills/ — ${skillSummary(claudeSkills)}`);
-    console.log(`  .agents/skills/ — ${skillSummary(agentsSkills)}`);
+    console.log('  wiki/            — AI-maintained wiki pages');
+    console.log('  sources/         — Raw source documents');
+    console.log('  wiki-purpose.md  — Wiki purpose and scope');
+    console.log('  wiki-schema.md   — Page conventions and structure');
+    console.log('  wiki-log.md      — Change log');
+    console.log('  CLAUDE.md        — Agent bootstrap (Claude Code)');
+    console.log('  AGENTS.md        — Agent bootstrap (Codex)');
+    console.log('  .llm-wiki/       — Config and state');
+    console.log(`  .claude/skills/  — ${skillSummary(claudeSkills)}`);
+    console.log(`  .agents/skills/  — ${skillSummary(agentsSkills)}`);
     console.log('');
     console.log('Next steps:');
-    console.log('  1. Edit purpose.md to define your wiki\'s scope');
-    console.log('  2. Edit schema.md to set naming conventions');
+    console.log('  1. Edit wiki-purpose.md to define your wiki\'s scope');
+    console.log('  2. Edit wiki-schema.md to set naming conventions');
     console.log('  3. Use your AI agent with /ingest to start building the wiki');
     console.log('');
     console.log('To upgrade skills later: `llm-wiki skill install`');

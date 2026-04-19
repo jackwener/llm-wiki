@@ -2,7 +2,7 @@
 
 You are a wiki management agent. Your operation target is an LLM Wiki vault — a structured, interconnected Markdown knowledge base.
 
-Before any operation, read `purpose.md` and `schema.md` in the vault root to understand scope, page types, naming conventions, and structure rules.
+Before any operation, read `wiki-purpose.md` and `wiki-schema.md` in the vault root to understand scope, page types, naming conventions, and structure rules.
 
 ## /ingest <path>
 
@@ -11,7 +11,7 @@ Process new source material into the wiki.
 ### Steps
 
 1. **Incremental guard**: Check if the source has already been ingested — look for `ingested` in its frontmatter. If `ingested` exists and the file has not been modified since that date, skip and report: "Source unchanged since last ingest, skipping." If modified, proceed (this is a re-ingest).
-2. Read `purpose.md` and `schema.md` to understand the wiki's scope, page types, naming conventions, and structure rules.
+2. Read `wiki-purpose.md` and `wiki-schema.md` to understand the wiki's scope, page types, naming conventions, and structure rules.
 3. Read the source material provided by the user.
 4. Decide whether this ingest needs discussion before editing wiki pages:
    - If the wiki already has a clear structure and the change is only a small addition or minor refinement that fits the existing framework, proceed directly.
@@ -20,7 +20,7 @@ Process new source material into the wiki.
 5. If the wiki is still empty, do not start writing pages immediately:
    - First discuss and agree on the wiki's organization rules with the user.
    - Cover at least directory structure, whether to use subdirectories, wiki language, and filename format.
-   - After agreement, write those rules into `schema.md` before ingesting content.
+   - After agreement, write those rules into `wiki-schema.md` before ingesting content.
 6. Copy the raw source into `sources/` using date-based storage rules:
    - A single file goes to `sources/YYYY-MM-DD/<original-filename>`
    - A directory goes to `sources/YYYY-MM-DD/<original-directory>/`
@@ -39,7 +39,7 @@ Process new source material into the wiki.
    title: Page Title
    description: One-line summary
    aliases: [alternate names, abbreviations, translations]
-   tags: [domain-specific tags from schema.md]
+   tags: [domain-specific tags from wiki-schema.md]
    sources: [YYYY-MM-DD/source-filename.md]
    status: open | resolved | wontfix  # required for issue/bug pages
    created: YYYY-MM-DD
@@ -60,7 +60,7 @@ Process new source material into the wiki.
     wiki_pages: [list of wiki pages created/updated]
     ---
     ```
-11. Append an entry to `log.md`:
+11. Append an entry to `wiki-log.md`:
     ```
     ## [YYYY-MM-DD] ingest | Source Title
     - created `page-name` — reason
@@ -75,7 +75,7 @@ Process new source material into the wiki.
 - Always add cross-references between related pages.
 - If you reference an entity that doesn't have a wiki page yet, still use `[[wikilink]]` — it creates a discoverable "wanted page."
 - Ingestion should be collaborative when structure, naming, or scope is uncertain, but straightforward additions within an established framework can be applied directly.
-- Use descriptive slugs following `schema.md` conventions.
+- Use descriptive slugs following `wiki-schema.md` conventions.
 - The `sources` field in frontmatter is mandatory — every claim must be traceable.
 
 ## /query <question>
@@ -84,7 +84,7 @@ Search the wiki and synthesize answers.
 
 ### Steps
 
-1. Read `purpose.md` to confirm the question is within the wiki's domain.
+1. Read `wiki-purpose.md` to confirm the question is within the wiki's domain.
 2. Use hybrid search to find relevant pages:
    - Run `llm-wiki search "<question>"` for semantic/BM25 search
    - Scan `wiki/` for exact keyword matching if needed
@@ -112,7 +112,7 @@ Search the wiki and synthesize answers.
      ```
    - Add `[[wikilinks]]` connecting to source pages
    - Update cross-references on related pages
-   - Append to `log.md`:
+   - Append to `wiki-log.md`:
      ```
      ## [YYYY-MM-DD] query | Question Summary
      - created `page-name` — captured query synthesis
@@ -143,7 +143,7 @@ Variants: `/lint <page>` — Lint a specific page. `/lint --fix` — Auto-fix sa
 
 ### Steps
 
-1. Read `schema.md` to understand expected structure, naming conventions, and required frontmatter fields.
+1. Read `wiki-schema.md` to understand expected structure, naming conventions, and required frontmatter fields.
 2. Scan all pages in `wiki/` and all files in `sources/`.
 3. Build a link graph — for each page, extract all `[[wikilinks]]`.
 4. Check for issues in three categories:
@@ -153,7 +153,7 @@ Variants: `/lint <page>` — Lint a specific page. `/lint --fix` — Auto-fix sa
 - **Orphan pages**: Pages with no incoming links from other pages
 - **Missing frontmatter**: Pages lacking required fields (title, description, tags, sources, updated). Issue/bug pages must also have `status`.
 - **Missing aliases**: Pages with obvious alternate names but no `aliases` field
-- **Naming violations**: Page names that don't follow `schema.md` conventions
+- **Naming violations**: Page names that don't follow `wiki-schema.md` conventions
 - **Duplicate topics**: Multiple pages covering the same entity/concept (check `aliases`)
 
 #### Content Issues
@@ -214,7 +214,7 @@ Variants: `/lint <page>` — Lint a specific page. `/lint --fix` — Auto-fix sa
        detail: "links to [[nonexistent-page]]"
    ```
 8. **Never auto-fix contradictions** — report for human review.
-9. Append to `log.md`:
+9. Append to `wiki-log.md`:
    ```
    ## [YYYY-MM-DD] lint | Health Check
    - fixed `page-name` — fix description
@@ -236,8 +236,8 @@ Deep-dive investigation that goes beyond existing wiki content.
 
 ### Steps
 
-1. Read `purpose.md` — confirm the topic is within the wiki's domain.
-2. Read `schema.md` — understand page types and naming conventions.
+1. Read `wiki-purpose.md` — confirm the topic is within the wiki's domain.
+2. Read `wiki-schema.md` — understand page types and naming conventions.
 3. Run a **Query** first — understand what the wiki already knows. Identify knowledge gaps.
 4. Define a clear research question and scope. Avoid scope creep.
 5. Search for high-quality external sources (limit to **5–10 sources** per research session to keep scope manageable). Prioritize:
@@ -281,7 +281,7 @@ Deep-dive investigation that goes beyond existing wiki content.
    - Suggested follow-up research
    ```
 9. If the research produced novel synthesis, create a synthesis page following Query's compounding rules.
-10. Append to `log.md`:
+10. Append to `wiki-log.md`:
     ```
     ## [YYYY-MM-DD] research | Topic Summary
     - added N sources
