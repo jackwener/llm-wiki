@@ -12,15 +12,28 @@ export function listSkills(skillsDir: string): string[] {
   return readdirSync(skillsDir).filter(f => f.endsWith('.md'));
 }
 
-export function installSkillsTo(targetDir: string): string[] {
+export interface InstallResult {
+  installed: string[];
+  skipped: string[];
+}
+
+export function installSkillsTo(targetDir: string, overwrite = true): InstallResult {
   const skillsDir = getSkillsDir();
   if (!existsSync(skillsDir)) {
     throw new Error('Skills directory not found. Package may be corrupted.');
   }
   mkdirSync(targetDir, { recursive: true });
   const files = listSkills(skillsDir);
+  const installed: string[] = [];
+  const skipped: string[] = [];
   for (const file of files) {
-    copyFileSync(join(skillsDir, file), join(targetDir, file));
+    const dest = join(targetDir, file);
+    if (!overwrite && existsSync(dest)) {
+      skipped.push(file);
+      continue;
+    }
+    copyFileSync(join(skillsDir, file), dest);
+    installed.push(file);
   }
-  return files;
+  return { installed, skipped };
 }

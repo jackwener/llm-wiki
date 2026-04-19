@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execSync } from 'node:child_process';
-import { existsSync, rmSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -35,7 +35,27 @@ describe('init command', () => {
 
   it('should auto-install skills to both agent dirs', () => {
     execSync(`node ${CLI} init`, { cwd: testDir });
-    expect(existsSync(join(testDir, '.claude/skills/llm-wiki.md'))).toBe(true);
+    const claudeSkill = join(testDir, '.claude/skills/llm-wiki.md');
+    const agentsSkill = join(testDir, '.agents/skills/llm-wiki.md');
+    expect(existsSync(claudeSkill)).toBe(true);
+    expect(existsSync(agentsSkill)).toBe(true);
+    // Content must match (not just empty file)
+    const claudeContent = readFileSync(claudeSkill, 'utf-8');
+    const agentsContent = readFileSync(agentsSkill, 'utf-8');
+    expect(claudeContent.length).toBeGreaterThan(100);
+    expect(claudeContent).toEqual(agentsContent);
+  });
+
+  it('should not clobber pre-existing customized skill files', () => {
+    const claudeSkillDir = join(testDir, '.claude/skills');
+    mkdirSync(claudeSkillDir, { recursive: true });
+    const customContent = '# My Custom Skill\n\nDo not overwrite me.\n';
+    writeFileSync(join(claudeSkillDir, 'llm-wiki.md'), customContent);
+
+    execSync(`node ${CLI} init`, { cwd: testDir });
+
+    expect(readFileSync(join(claudeSkillDir, 'llm-wiki.md'), 'utf-8')).toEqual(customContent);
+    // Fresh dir still gets the bundled skill
     expect(existsSync(join(testDir, '.agents/skills/llm-wiki.md'))).toBe(true);
   });
 

@@ -18,17 +18,17 @@ skillCommand
 
     if (both || opts.claude) {
       const dir = join(workspace, '.claude', 'skills');
-      const files = installSkillsTo(dir);
-      console.log(`Installed ${files.length} skill${files.length === 1 ? '' : 's'} to ${dir}/`);
-      for (const file of files) console.log(`  ${file.replace('.md', '')}`);
+      const { installed } = installSkillsTo(dir);
+      console.log(`Installed ${installed.length} skill${installed.length === 1 ? '' : 's'} to ${dir}/`);
+      for (const file of installed) console.log(`  ${file.replace('.md', '')}`);
     }
 
     if (both || opts.codex) {
       const dir = join(workspace, '.agents', 'skills');
-      const files = installSkillsTo(dir);
+      const { installed } = installSkillsTo(dir);
       if (both) console.log('');
-      console.log(`Installed ${files.length} skill${files.length === 1 ? '' : 's'} to ${dir}/`);
-      for (const file of files) console.log(`  ${file.replace('.md', '')}`);
+      console.log(`Installed ${installed.length} skill${installed.length === 1 ? '' : 's'} to ${dir}/`);
+      for (const file of installed) console.log(`  ${file.replace('.md', '')}`);
     }
   });
 

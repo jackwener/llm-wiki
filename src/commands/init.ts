@@ -134,6 +134,12 @@ export const initCommand = new Command('init')
     mkdirSync(paths.sources, { recursive: true });
     mkdirSync(paths.llmWikiDir, { recursive: true });
 
+    // Install skills first (before vault marker) so a failure here leaves
+    // the dir in a re-runnable state instead of half-initialized.
+    // overwrite=false so a user's customized skill file is preserved.
+    const claudeSkills = installSkillsTo(paths.claudeSkillsDir, false);
+    const agentsSkills = installSkillsTo(paths.agentsSkillsDir, false);
+
     // Create files (only if they don't exist)
     const filesToCreate: [string, string][] = [
       [paths.purpose, PURPOSE_TEMPLATE],
@@ -150,9 +156,12 @@ export const initCommand = new Command('init')
       }
     }
 
-    // Install skills to both agent workspaces
-    const claudeSkills = installSkillsTo(paths.claudeSkillsDir);
-    const agentsSkills = installSkillsTo(paths.agentsSkillsDir);
+    const skillSummary = (r: { installed: string[]; skipped: string[] }) => {
+      const parts: string[] = [];
+      if (r.installed.length) parts.push(`${r.installed.length} installed`);
+      if (r.skipped.length) parts.push(`${r.skipped.length} kept`);
+      return parts.join(', ') || 'no skills';
+    };
 
     console.log(`Initialized llm-wiki vault in ${targetDir}`);
     console.log('');
@@ -165,8 +174,8 @@ export const initCommand = new Command('init')
     console.log('  CLAUDE.md       — Agent bootstrap (Claude Code)');
     console.log('  AGENTS.md       — Agent bootstrap (Codex)');
     console.log('  .llm-wiki/      — Config and state');
-    console.log(`  .claude/skills/ — ${claudeSkills.length} skill${claudeSkills.length === 1 ? '' : 's'} installed`);
-    console.log(`  .agents/skills/ — ${agentsSkills.length} skill${agentsSkills.length === 1 ? '' : 's'} installed`);
+    console.log(`  .claude/skills/ — ${skillSummary(claudeSkills)}`);
+    console.log(`  .agents/skills/ — ${skillSummary(agentsSkills)}`);
     console.log('');
     console.log('Next steps:');
     console.log('  1. Edit purpose.md to define your wiki\'s scope');
