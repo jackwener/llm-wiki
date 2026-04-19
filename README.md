@@ -20,11 +20,6 @@ npm install -g @jackwener/llm-wiki
 mkdir my-wiki && cd my-wiki
 llm-wiki init
 
-# Install all skills for your AI agent (one command)
-llm-wiki skill install              # Both Claude Code + Codex
-llm-wiki skill install --claude     # Claude Code only
-llm-wiki skill install --codex      # Codex only
-
 # Now use your AI agent:
 #   /ingest sources/some-article.md
 #   /query "What do we know about X?"
@@ -32,20 +27,43 @@ llm-wiki skill install --codex      # Codex only
 #   /research "deep dive on Y"
 ```
 
+`llm-wiki init` is the only setup command — it creates the vault files, the
+agent bootstrap files (`CLAUDE.md`, `AGENTS.md`), and installs the bundled
+skill into `.claude/skills/` and `.agents/skills/` in one step.
+
+After upgrading the package, refresh the installed skill files with:
+
+```bash
+llm-wiki skill install
+```
+
 ## Vault Structure
 
 ```
 my-wiki/
+├── CLAUDE.md              # Agent bootstrap for Claude Code (auto-loaded)
+├── AGENTS.md              # Agent bootstrap for Codex (auto-loaded)
 ├── wiki-purpose.md        # Wiki scope and audience
 ├── wiki-schema.md         # Page types, naming conventions, frontmatter rules
 ├── wiki-log.md            # Append-only operation log
 ├── wiki/                  # AI-maintained wiki pages (Obsidian-compatible)
 ├── sources/               # Raw, immutable source documents
 │   └── YYYY-MM-DD/        # Date-based storage
+├── .claude/
+│   └── skills/
+│       └── llm-wiki.md    # Skill file for Claude Code
+├── .agents/
+│   └── skills/
+│       └── llm-wiki.md    # Skill file for Codex
 └── .llm-wiki/
     ├── config.toml        # Vault configuration
     └── sync-state.json    # Incremental sync tracking
 ```
+
+`llm-wiki init` generates every file above in one step. `CLAUDE.md` and
+`AGENTS.md` at the vault root are loaded automatically by their respective
+agents on session start, so the agent knows this workspace is a wiki vault
+and picks up the bundled skill without manual configuration.
 
 ## Agent Skill
 

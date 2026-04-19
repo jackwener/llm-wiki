@@ -65,7 +65,9 @@ Append-only record of wiki operations. Format: \`[date] verb | subject\`
 
 const CLAUDE_MD_TEMPLATE = `# LLM Wiki
 
-This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki operations.
+This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki
+operations. The full skill (operation steps, schemas, examples) lives at
+\`.claude/skills/llm-wiki.md\` and is loaded on demand by Claude Code.
 
 ## Quick Start
 
@@ -80,18 +82,26 @@ This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki ope
 - \`wiki-log.md\` — Append-only operation log
 - \`.llm-wiki/\` — Config and sync state
 
+## CLI
+
+- \`llm-wiki search <query>\` — BM25 (+ vector, if DB9 configured) keyword search
+- \`llm-wiki graph\` — communities, hubs, orphans, wanted pages
+- \`llm-wiki status\` — stats + health summary
+- \`llm-wiki sync\` — track mtime/SHA256, push embeddings to DB9 if configured
+
 ## Rules
 
 1. Always read \`wiki-purpose.md\` and \`wiki-schema.md\` before any operation
 2. Never modify files in \`sources/\` — they are immutable raw inputs
 3. Use \`[[wikilinks]]\` for cross-references between wiki pages
-4. Append every operation to \`wiki-log.md\`
-5. Run \`llm-wiki sync\` after making changes
+4. After every operation, append an entry to \`wiki-log.md\` **and** run \`llm-wiki sync\`
 `;
 
-const AGENTS_MD_TEMPLATE = `# AGENTS.md
+const AGENTS_MD_TEMPLATE = `# LLM Wiki
 
-This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki operations.
+This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki
+operations. The full skill (operation steps, schemas, examples) lives at
+\`.agents/skills/llm-wiki.md\` and is loaded on demand by Codex.
 
 ## Quick Start
 
@@ -101,18 +111,24 @@ This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki ope
 
 ## Layout
 
-- \`wiki/\` — AI-maintained wiki pages
+- \`wiki/\` — AI-maintained wiki pages (Obsidian-compatible)
 - \`sources/\` — Raw source documents, date-partitioned (immutable)
 - \`wiki-log.md\` — Append-only operation log
 - \`.llm-wiki/\` — Config and sync state
+
+## CLI
+
+- \`llm-wiki search <query>\` — BM25 (+ vector, if DB9 configured) keyword search
+- \`llm-wiki graph\` — communities, hubs, orphans, wanted pages
+- \`llm-wiki status\` — stats + health summary
+- \`llm-wiki sync\` — track mtime/SHA256, push embeddings to DB9 if configured
 
 ## Rules
 
 1. Always read \`wiki-purpose.md\` and \`wiki-schema.md\` before any operation
 2. Never modify files in \`sources/\` — they are immutable raw inputs
 3. Use \`[[wikilinks]]\` for cross-references between wiki pages
-4. Append every operation to \`wiki-log.md\`
-5. Run \`llm-wiki sync\` after making changes
+4. After every operation, append an entry to \`wiki-log.md\` **and** run \`llm-wiki sync\`
 `;
 
 export const initCommand = new Command('init')
