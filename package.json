@@ -1,6 +1,6 @@
 {
   "name": "@jackwener/llm-wiki",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Agent-native LLM Wiki — AI-maintained knowledge base with Obsidian compatibility",
   "type": "module",
   "bin": {
