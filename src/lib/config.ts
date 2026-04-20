@@ -55,6 +55,7 @@ export function vaultPaths(root: string) {
     sources: join(root, 'sources'),
     purpose: join(root, 'wiki-purpose.md'),
     schema: join(root, 'wiki-schema.md'),
+    agent: join(root, 'wiki-agent.md'),
     log: join(root, 'wiki-log.md'),
     claudeMd: join(root, 'CLAUDE.md'),
     agentsMd: join(root, 'AGENTS.md'),
