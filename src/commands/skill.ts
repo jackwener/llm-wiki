@@ -20,7 +20,7 @@ skillCommand
       const dir = join(workspace, '.claude', 'skills');
       const { installed } = installSkillsTo(dir);
       console.log(`Installed ${installed.length} skill${installed.length === 1 ? '' : 's'} to ${dir}/`);
-      for (const file of installed) console.log(`  ${file.replace('.md', '')}`);
+      for (const name of installed) console.log(`  ${name}`);
     }
 
     if (both || opts.codex) {
@@ -28,7 +28,7 @@ skillCommand
       const { installed } = installSkillsTo(dir);
       if (both) console.log('');
       console.log(`Installed ${installed.length} skill${installed.length === 1 ? '' : 's'} to ${dir}/`);
-      for (const file of installed) console.log(`  ${file.replace('.md', '')}`);
+      for (const name of installed) console.log(`  ${name}`);
     }
   });
 
@@ -43,10 +43,10 @@ skillCommand
       process.exit(1);
     }
 
-    const skillPath = join(skillsDir, `${name}.md`);
+    const skillPath = join(skillsDir, name, 'SKILL.md');
     if (!existsSync(skillPath)) {
       console.error(`Error: Skill "${name}" not found.`);
-      console.error(`Available: ${listSkills(skillsDir).map(f => f.replace('.md', '')).join(', ')}`);
+      console.error(`Available: ${listSkills(skillsDir).join(', ')}`);
       process.exit(1);
     }
 
@@ -63,10 +63,10 @@ skillCommand
       process.exit(1);
     }
 
-    const files = listSkills(skillsDir);
+    const skills = listSkills(skillsDir);
     console.log('Available skills:');
-    for (const file of files) {
-      console.log(`  ${file.replace(/\.md$/, '')}`);
+    for (const name of skills) {
+      console.log(`  ${name}`);
     }
     console.log('');
     console.log('Install all:  llm-wiki skill install');
