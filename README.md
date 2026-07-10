@@ -28,8 +28,8 @@ llm-wiki init
 ```
 
 `llm-wiki init` is the only setup command — it creates the vault files, the
-agent bootstrap files (`CLAUDE.md`, `AGENTS.md`), and installs the bundled
-skill into `.claude/skills/` and `.agents/skills/` in one step.
+agent bootstrap files (`CLAUDE.md`, `AGENTS.md`), and installs the four bundled
+operation skills into `.claude/skills/` and `.agents/skills/` in one step.
 
 After upgrading the package, refresh the installed skill files with:
 
@@ -51,12 +51,16 @@ my-wiki/
 │   └── YYYY-MM-DD/        # Date-based storage
 ├── .claude/
 │   └── skills/
-│       └── llm-wiki/
-│           └── SKILL.md   # Skill file for Claude Code (Agent Skills spec)
+│       ├── ingest/SKILL.md    # Source → wiki pages
+│       ├── query/SKILL.md     # Evidence-grounded wiki answers
+│       ├── lint/SKILL.md      # Wiki health checks
+│       └── research/SKILL.md  # External research → wiki
 ├── .agents/
 │   └── skills/
-│       └── llm-wiki/
-│           └── SKILL.md   # Skill file for Codex (Agent Skills spec)
+│       ├── ingest/SKILL.md
+│       ├── query/SKILL.md
+│       ├── lint/SKILL.md
+│       └── research/SKILL.md
 └── .llm-wiki/
     ├── config.toml        # Vault configuration
     └── sync-state.json    # Incremental sync tracking
@@ -77,37 +81,37 @@ Claude Code reads `CLAUDE.md`, Codex reads `AGENTS.md`. They tell the agent:
 - this workspace is an LLM Wiki vault
 - where to find `wiki-purpose.md` and `wiki-schema.md`
 - which `/ingest`, `/query`, `/lint`, `/research` commands are available
-- where the full skill file lives (`.claude/skills/llm-wiki/SKILL.md` or
-  `.agents/skills/llm-wiki/SKILL.md`)
+- which of the four operation skills to load (`ingest`, `query`, `lint`, or
+  `research`)
 - a short CLI cheat-sheet and the core operating rules
 
 Because they are auto-loaded, they are intentionally small — a few dozen
 lines — to keep session-start context cheap.
 
-**2. Skill file — `.claude/skills/llm-wiki/SKILL.md` and `.agents/skills/llm-wiki/SKILL.md`**
+**2. Operation skills — `.claude/skills/{ingest,query,lint,research}/SKILL.md`
+and `.agents/skills/{ingest,query,lint,research}/SKILL.md`**
 
-The full agent playbook, **loaded on demand** when the agent invokes a wiki
-command. It contains the detailed step-by-step procedure for each operation,
-page schemas, frontmatter rules, worked examples, and invariants (e.g. the
-sources/ immutability rule, the wiki-log.md + sync tail rule). The skill
-follows the [Agent Skills specification](https://agentskills.io/specification)
-(`skills/<name>/SKILL.md` with YAML frontmatter) so it is auto-discovered by
-spec-compliant agents (Claude Code, Codex, Amp, and others). The same skill
-is installed into both platform directories so a single vault works with
-Claude Code and Codex without reconfiguration.
+Each operation has a focused playbook, **loaded on demand** when the matching
+command is invoked. The skills contain the relevant procedure, page schemas,
+frontmatter rules, and invariants (for example, source immutability and the
+wiki-log.md + sync tail rule). Every skill follows the
+[Agent Skills specification](https://agentskills.io/specification)
+(`skills/<name>/SKILL.md` with YAML frontmatter), so spec-compliant agents
+(Claude Code, Codex, Amp, and others) discover them independently. All four
+are installed into both platform directories for a shared vault setup.
 
 **Upgrading.** `llm-wiki init` is the only setup command — it writes both
-entry files and installs the skill. After upgrading the npm package, run
-`llm-wiki skill install` to refresh the skill file. Your edits to
+entry files and installs the four skills. After upgrading the npm package, run
+`llm-wiki skill install` to refresh the skill files. Your edits to
 `CLAUDE.md` / `AGENTS.md` are preserved across reinstalls.
 
-**Upgrading from 0.5.x → 0.6.0.** The skill layout changed from a flat
-`skills/llm-wiki.md` to spec-compliant `skills/llm-wiki/SKILL.md`. Run
-`llm-wiki skill install` to write the new layout, then delete the old
-orphan files (they are no longer read by any agent):
+**Upgrading to the four-skill layout.** Run `llm-wiki skill install` to add
+the operation skills. If you previously installed the legacy monolithic skill,
+remove it afterwards so its broad trigger does not overlap the four focused
+skills:
 
 ```bash
-rm -f .claude/skills/llm-wiki.md .agents/skills/llm-wiki.md
+rm -rf .claude/skills/llm-wiki .agents/skills/llm-wiki
 ```
 
 ## Operations

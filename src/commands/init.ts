@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { findVaultRoot, vaultPaths } from '../lib/config.js';
 import { installSkillsTo } from '../lib/skills.js';
 
@@ -124,9 +124,13 @@ Describe the agent's role here. Example:
 
 const CLAUDE_MD_TEMPLATE = `# LLM Wiki
 
-This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki
-operations. The full skill (operation steps, schemas, examples) lives at
-\`.claude/skills/llm-wiki/SKILL.md\` and is loaded on demand by Claude Code.
+This workspace is an LLM Wiki vault. Use the matching wiki skill for each
+operation. The full skills are loaded on demand by Claude Code:
+
+- \`/ingest\` → \`.claude/skills/ingest/SKILL.md\`
+- \`/query\` → \`.claude/skills/query/SKILL.md\`
+- \`/lint\` → \`.claude/skills/lint/SKILL.md\`
+- \`/research\` → \`.claude/skills/research/SKILL.md\`
 
 ## Agent Identity
 
@@ -187,9 +191,13 @@ detailed behavioral rules specific to this vault.
 
 const AGENTS_MD_TEMPLATE = `# LLM Wiki
 
-This workspace is an LLM Wiki vault. Use the \`llm-wiki\` skill for all wiki
-operations. The full skill (operation steps, schemas, examples) lives at
-\`.agents/skills/llm-wiki/SKILL.md\` and is loaded on demand by Codex.
+This workspace is an LLM Wiki vault. Use the matching wiki skill for each
+operation. The full skills are loaded on demand by Codex:
+
+- \`/ingest\` → \`.agents/skills/ingest/SKILL.md\`
+- \`/query\` → \`.agents/skills/query/SKILL.md\`
+- \`/lint\` → \`.agents/skills/lint/SKILL.md\`
+- \`/research\` → \`.agents/skills/research/SKILL.md\`
 
 ## Agent Identity
 
@@ -252,7 +260,9 @@ export const initCommand = new Command('init')
   .description('Initialize a new llm-wiki vault')
   .argument('[directory]', 'directory to initialize', '.')
   .action((directory: string) => {
-    const targetDir = join(process.cwd(), directory);
+    // `join(cwd, absolutePath)` treats the absolute argument as a relative
+    // segment. Resolve instead so both relative and absolute targets work.
+    const targetDir = resolve(process.cwd(), directory);
 
     // Check if already initialized
     if (findVaultRoot(targetDir)) {

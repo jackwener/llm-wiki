@@ -39,41 +39,52 @@ describe('init command', () => {
 
   it('should auto-install skills to both agent dirs in spec-compliant layout', () => {
     execSync(`node ${CLI} init`, { cwd: testDir });
-    const claudeSkill = join(testDir, '.claude/skills/llm-wiki/SKILL.md');
-    const agentsSkill = join(testDir, '.agents/skills/llm-wiki/SKILL.md');
-    expect(existsSync(claudeSkill)).toBe(true);
-    expect(existsSync(agentsSkill)).toBe(true);
-    // Content must match (not just empty file) and must include the
-    // Agent-Skills-spec YAML frontmatter so any compliant agent can
-    // auto-discover it.
-    const claudeContent = readFileSync(claudeSkill, 'utf-8');
-    const agentsContent = readFileSync(agentsSkill, 'utf-8');
-    expect(claudeContent.length).toBeGreaterThan(100);
-    expect(claudeContent).toEqual(agentsContent);
-    expect(claudeContent.startsWith('---\n')).toBe(true);
-    expect(claudeContent).toMatch(/\nname:\s*llm-wiki\b/);
-    expect(claudeContent).toMatch(/\ndescription:\s*\S/);
-    // Flat-file layout must NOT be produced (issue #2).
-    expect(existsSync(join(testDir, '.claude/skills/llm-wiki.md'))).toBe(false);
-    expect(existsSync(join(testDir, '.agents/skills/llm-wiki.md'))).toBe(false);
+    const skills = ['ingest', 'query', 'lint', 'research'];
+    for (const name of skills) {
+      const claudeSkill = join(testDir, '.claude/skills', name, 'SKILL.md');
+      const agentsSkill = join(testDir, '.agents/skills', name, 'SKILL.md');
+      expect(existsSync(claudeSkill)).toBe(true);
+      expect(existsSync(agentsSkill)).toBe(true);
+
+      // Content must match (not just empty files) and must include Agent Skills
+      // frontmatter so any compliant agent can independently discover it.
+      const claudeContent = readFileSync(claudeSkill, 'utf-8');
+      const agentsContent = readFileSync(agentsSkill, 'utf-8');
+      expect(claudeContent.length).toBeGreaterThan(100);
+      expect(claudeContent).toEqual(agentsContent);
+      expect(claudeContent.startsWith('---\n')).toBe(true);
+      expect(claudeContent).toMatch(new RegExp(`\\nname:\\s*${name}\\b`));
+      expect(claudeContent).toMatch(/\ndescription:\s*\S/);
+    }
+    expect(existsSync(join(testDir, '.claude/skills/llm-wiki/SKILL.md'))).toBe(false);
+    expect(existsSync(join(testDir, '.agents/skills/llm-wiki/SKILL.md'))).toBe(false);
   });
 
   it('should not clobber pre-existing customized skill files', () => {
-    const claudeSkillDir = join(testDir, '.claude/skills/llm-wiki');
+    const claudeSkillDir = join(testDir, '.claude/skills/ingest');
     mkdirSync(claudeSkillDir, { recursive: true });
-    const customContent = '---\nname: llm-wiki\ndescription: custom\n---\n\n# My Custom Skill\n\nDo not overwrite me.\n';
+    const customContent = '---\nname: ingest\ndescription: custom\n---\n\n# My Custom Skill\n\nDo not overwrite me.\n';
     writeFileSync(join(claudeSkillDir, 'SKILL.md'), customContent);
 
     execSync(`node ${CLI} init`, { cwd: testDir });
 
     expect(readFileSync(join(claudeSkillDir, 'SKILL.md'), 'utf-8')).toEqual(customContent);
     // Fresh dir still gets the bundled skill
-    expect(existsSync(join(testDir, '.agents/skills/llm-wiki/SKILL.md'))).toBe(true);
+    expect(existsSync(join(testDir, '.agents/skills/ingest/SKILL.md'))).toBe(true);
+    expect(existsSync(join(testDir, '.agents/skills/query/SKILL.md'))).toBe(true);
   });
 
   it('should not overwrite existing files', () => {
     execSync(`node ${CLI} init`, { cwd: testDir });
     // Should fail if already initialized
     expect(() => execSync(`node ${CLI} init`, { cwd: testDir, stdio: 'pipe' })).toThrow();
+  });
+
+  it('should initialize an absolute target path without nesting it under cwd', () => {
+    const targetDir = join(testDir, 'absolute-vault');
+    execSync(`node ${CLI} init ${targetDir}`, { cwd: testDir });
+
+    expect(existsSync(join(targetDir, '.llm-wiki/config.toml'))).toBe(true);
+    expect(existsSync(join(testDir, targetDir.replace(/^\//, '')))).toBe(false);
   });
 });
